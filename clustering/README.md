@@ -48,7 +48,7 @@ No hay mucho interesante, el clustering es en base a grafos
 
 
 ## Optimal Interpretable Clustering Using Oblique Decision Trees
-
+Recently, ref [26] provides theoretical approximation bounds over the optimal k-means and k-medians clustering for an axis-aligned decision tree with one leaf per cluster, and proposes a greedy recursive partitioning algorithm to build the tree from the k-means result. Subsequent works [9, 15, 21, 24]
 
 ## Doi
 * https://doi.org/10.1145/3534678.3539361
