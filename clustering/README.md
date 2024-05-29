@@ -32,6 +32,28 @@ Primero crea los cluster usando reglas difusas. De manera similar a los algoritm
 * https://doi.org/10.1016/j.ins.2022.08.077
 
 
+## Interpretable and Reconfigurable Clustering of Document Datasets by Deriving Word-based Rules
+El paper muestra un clustering interpretable para documentos, realiza clustering en base a reglas
+Ocupa net purity, f-measure and rule length para evaluar los datasets
+### Doi
+* https://doi.org/10.1145/1645953.1646227
+
+
+
+## Balancing the Tradeoff Between Clustering Value and Interpretability
+No hay mucho interesante, el clustering es en base a grafos
+### Doi
+* https://doi.org/10.1145/3375627.3375843
+
+
+
+## Optimal Interpretable Clustering Using Oblique Decision Trees
+
+
+## Doi
+* https://doi.org/10.1145/3534678.3539361
+
+
 ## EVCLUS: Evidential Clustering of Proximity Data
 
 ### Doi
