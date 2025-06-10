@@ -2,6 +2,8 @@ from dsgd import DSClassifierMultiQ
 import pandas as pd
 from sklearn.cluster import KMeans, DBSCAN, AgglomerativeClustering
 import numpy as np
+from scipy.optimize import linear_sum_assignment
+from scipy.stats import pearsonr
 
 class DSClustering:
     def __init__(self, X, n_clusters, clusters_algorithms):
@@ -10,6 +12,7 @@ class DSClustering:
         self.clusters_algorithms = clusters_algorithms
         self.results = {}
         self.labels = None
+        self.dsc = None
 
     def compute_clusters(self):
         """
@@ -57,31 +60,48 @@ class DSClustering:
 
     def normalize_clusters(self):
         """
-        Normalize cluster labels for consistent comparison.
-        Applies label encoding to each algorithm's result.
+        Permute cluster labels for each algorithm (except the first) to maximize Pearson correlation
+        with the reference algorithm's labels, while preserving the number of unique classes.
         """
         if not self.results:
             raise ValueError("No clusters computed. Please run compute_clusters() first.")
-        # Use the labels from the first algorithm as reference
+
         algorithms = list(self.results.keys())
-        labels1 = self.results[algorithms[0]]
+        ref_labels = self.results[algorithms[0]]
+
         for alg in algorithms[1:]:
-            labels2 = self.results[alg]
-            updated_labels2 = np.copy(labels2)
-            correspondence_dict = {}
-            for l1, l2 in zip(labels1, labels2):
-                if l1 != l2:
-                    if l1 not in correspondence_dict:
-                        correspondence_dict[l1] = l2
-                for old_label, new_label in correspondence_dict.items():
-                    updated_labels2[labels2 == new_label] = old_label
-            self.results[alg] = updated_labels2
+            labels = self.results[alg]
+            unique_ref = np.unique(ref_labels)
+            unique_labels = np.unique(labels)
+
+            # Build cost matrix (negative absolute Pearson correlation for each label mapping)
+            cost_matrix = np.zeros((len(unique_labels), len(unique_ref)))
+            for i, l1 in enumerate(unique_labels):
+                for j, l2 in enumerate(unique_ref):
+                    mask1 = (labels == l1).astype(int)
+                    mask2 = (ref_labels == l2).astype(int)
+                    # If all zeros or all ones, pearsonr returns nan, so set to 0
+                    try:
+                        corr, _ = pearsonr(mask1, mask2)
+                        if np.isnan(corr):
+                            corr = 0
+                    except Exception:
+                        corr = 0
+                    cost_matrix[i, j] = -abs(corr)
+
+            # Hungarian algorithm to maximize total absolute Pearson correlation
+            row_ind, col_ind = linear_sum_assignment(cost_matrix)
+            label_mapping = {unique_labels[i]: unique_ref[j] for i, j in zip(row_ind, col_ind)}
+
+            # Remap labels, keep unmapped labels as is (if more clusters in one than the other)
+            new_labels = np.array([label_mapping.get(l, l) for l in labels])
+            self.results[alg] = new_labels
         
         
-    def fit_dsc(self):
+    def fit_dsc(self, threshold=0.01):
         X_values = self.X.values
         # Concatenate all cluster labels from different algorithms into a single vector
-        Y_values = np.concatenate([labels for labels in self.results.values()]).reshape(-1, 1)
+        Y_values = np.concatenate([labels for labels in self.results.values()])
         X_values2 = np.concatenate([X_values] * len(self.results), axis=0)
         """ print("Fitting DSC with the following parameters:")
         print(f"Number of clusters: {self.n_clusters}")
@@ -115,8 +135,21 @@ class DSClustering:
             column_names=self.X.columns,
             print_every_epochs=1
         )
+        """ for alg, labels in self.results.items():
+            # Ensure labels are reshaped correctly
+            Y_values = labels
+            losses, epoch, dt = DSC.fit(
+                X_values,
+                Y_values,
+                add_single_rules=True,
+                single_rules_breaks=3,
+                add_mult_rules=False,
+                column_names=self.X.columns,
+                print_every_epochs=1
+            )
+            DSC.print_most_important_rules(threshold=0.01)   """
         predictions = DSC.predict(X_values)
         self.labels = predictions
-        DSC.print_most_important_rules(threshold=0.01)
+        DSC.print_most_important_rules(threshold=threshold)
+        self.dsc = DSC
         return self.labels
-        
