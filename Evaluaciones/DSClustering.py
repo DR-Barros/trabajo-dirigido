@@ -118,7 +118,7 @@ class DSClustering:
         DSC = DSClassifierMultiQ(
             self.n_clusters,
             min_iter=20,
-            max_iter=2000,
+            max_iter=500,
             debug_mode=True,
             lossfn="MSE",
             num_workers=0,
