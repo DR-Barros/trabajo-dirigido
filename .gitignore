@@ -1,2 +1,5 @@
 python-env/
 env/
+venv/
+venv3.9/
+__pycache__/
